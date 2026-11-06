@@ -1,9 +1,8 @@
 node_modules
 .next
-out
-.env
-.env.local
-.env.*.local
-.vercel
-*.tsbuildinfo
+.open-next
+.wrangler
+.env*
+!.env.example
+*.log
 .DS_Store
