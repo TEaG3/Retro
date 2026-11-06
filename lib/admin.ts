@@ -11,7 +11,7 @@ export async function verifyStoreOwner(token: string | null): Promise<boolean> {
   if (!token) return false;
   try {
     const env = getCloudflareContext().env as unknown as AdminEnv;
-    const team = env.CF_ACCESS_TEAM_DOMAIN?.replace(/^https?:\\/\\//, "").replace(/\\/$/, "");
+    const team = env.CF_ACCESS_TEAM_DOMAIN?.replace(/^https?:\/\//, "").replace(/\/$/, "");
     const audience = env.CF_ACCESS_AUD;
     const owner = env.OWNER_EMAIL?.trim().toLowerCase();
     if (!team || !audience || !owner) return false;
