@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Search, ShoppingBag, Zap } from "lucide-react";
+import { Search, ShoppingBag, Zap } from "lucide-react";\nimport { useCart } from "@/components/cart-provider";\n\n"use client";
 
-export function StoreHeader() {
+export function StoreHeader() {\n  const { count } = useCart();
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07060e]/90 backdrop-blur-xl">
       <div className="container flex h-[76px] items-center justify-between gap-4">
@@ -21,7 +21,7 @@ export function StoreHeader() {
         </nav>
         <div className="flex items-center gap-2">
           <Link href="/search" className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 hover:border-retro-cyan/50" aria-label="بحث"><Search size={18}/></Link>
-          <Link href="/cart" className="flex h-10 items-center gap-2 rounded-xl bg-retro-pink px-4 text-sm font-bold text-black hover:brightness-110"><ShoppingBag size={17}/> السلة</Link>
+          <Link href="/cart" className="flex h-10 items-center gap-2 rounded-xl bg-retro-pink px-4 text-sm font-bold text-black hover:brightness-110"><ShoppingBag size={17}/> السلة <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs">{count}</span></Link>
         </div>
       </div>
     </header>
