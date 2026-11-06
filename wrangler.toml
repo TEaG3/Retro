@@ -1,0 +1,18 @@
+name = "retro-store"
+main = ".open-next/worker.js"
+compatibility_date = "2026-11-06"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "retro-store-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
