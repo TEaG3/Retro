@@ -11,7 +11,7 @@ binding = "ASSETS"
 [[d1_databases]]
 binding = "DB"
 database_name = "retro-store-db"
-database_id = "REPLACE_WITH_D1_DATABASE_ID"
+database_id = "d6a1c5aa-767a-433c-b201-3745b7a2e329"
 migrations_dir = "migrations"
 
 [observability]
