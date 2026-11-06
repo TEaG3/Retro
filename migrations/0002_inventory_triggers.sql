@@ -1,3 +1,10 @@
+-- Seed the store's initial categories (safe to execute more than once).
+INSERT OR IGNORE INTO categories (name,slug,description,sort_order,is_active) VALUES
+('أجهزة ريترو','retro-devices','أجهزة الألعاب الكلاسيكية والمحمولة',1,1),
+('ملحقات وقطع غيار','accessories-parts','ملحقات وقطع غيار للأجهزة الإلكترونية',2,1),
+('إلكترونيات عامة','electronics','أجهزة إلكترونية للاستخدام اليومي',3,1),
+('أدوات ومعدات','tools-equipment','أدوات ومعدات تقنية',4,1);
+
 -- Keep stock changes atomic with order item insertion.
 CREATE TRIGGER IF NOT EXISTS order_items_check_stock
 BEFORE INSERT ON order_items
