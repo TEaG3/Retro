@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS product_images (
 );
 
 CREATE TABLE IF NOT EXISTS orders (
-  id TEXT PRIMARY KEY,
-  order_number INTEGER NOT NULL UNIQUE,
+  order_number INTEGER PRIMARY KEY AUTOINCREMENT,
+  id TEXT NOT NULL UNIQUE,
   customer_name TEXT NOT NULL,
   phone TEXT NOT NULL,
   city TEXT NOT NULL,
