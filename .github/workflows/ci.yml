@@ -20,5 +20,5 @@ jobs:
         run: npm run typecheck
       - name: ESLint
         run: npm run lint
-      - name: Next.js build
-        run: npm run build
+      - name: OpenNext Cloudflare build
+        run: npx opennextjs-cloudflare build
