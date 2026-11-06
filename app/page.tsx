@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { getActiveProducts } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
+import { ArrowLeft, Cpu, Gamepad2, Headphones, PackageCheck, ShieldCheck, Truck, Wrench } from "lucide-react";
 
 export const dynamic = "force-dynamic";
-import { ArrowLeft, Cpu, Gamepad2, Headphones, PackageCheck, ShieldCheck, Truck, Wrench } from "lucide-react";
 
 const categories = [
   { title: "أجهزة ريترو", description: "أجهزة الألعاب الكلاسيكية والمحمولة", icon: Gamepad2, color: "text-retro-pink" },
