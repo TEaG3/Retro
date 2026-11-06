@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 
-export const runtime = "edge";
 const orderSchema = z.object({
   customer_name: z.string().trim().min(3).max(100),
   phone: z.string().trim().min(7).max(20),
