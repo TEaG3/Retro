@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { getActiveProducts } from "@/lib/store";
+import { ProductCard } from "@/components/product-card";
+
+export const dynamic = "force-dynamic";
 import { ArrowLeft, Cpu, Gamepad2, Headphones, PackageCheck, ShieldCheck, Truck, Wrench } from "lucide-react";
 
 const categories = [
@@ -8,7 +12,8 @@ const categories = [
   { title: "أدوات ومعدات", description: "معدات وأدوات تقنية مختارة", icon: Headphones, color: "text-purple-300" }
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const featuredProducts = await getActiveProducts();
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10">
@@ -53,10 +58,8 @@ export default function HomePage() {
       </section>
 
       <section id="featured" className="container pb-20">
-        <div className="panel flex flex-col items-start justify-between gap-6 overflow-hidden p-8 md:flex-row md:items-center md:p-12">
-          <div><p className="text-xs tracking-[.2em] text-retro-pink">COMING INTO FOCUS</p><h2 className="mt-3 text-3xl font-black">قريباً: مجموعة المنتجات</h2><p className="mt-3 max-w-xl leading-8 text-white/50">سيتم ربط هذه الواجهة بقاعدة بيانات Cloudflare D1 لعرض المنتجات والأسعار والمخزون الفعلي.</p></div>
-          <Link href="/search" className="whitespace-nowrap rounded-xl border border-retro-cyan/40 px-5 py-3 text-sm text-retro-cyan hover:bg-retro-cyan/10">صفحة المنتجات <ArrowLeft className="mr-2 inline" size={16}/></Link>
-        </div>
+        <div className="mb-8 flex items-end justify-between gap-4"><div><p className="text-xs tracking-[.2em] text-retro-cyan">FEATURED PRODUCTS</p><h2 className="mt-3 text-3xl font-black">منتجات المتجر</h2><p className="mt-2 text-sm text-white/45">تتحدث القائمة مباشرة من قاعدة بيانات المتجر.</p></div><Link href="/search" className="text-sm text-retro-cyan">عرض الكل ←</Link></div>
+        {featuredProducts.length ? <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{featuredProducts.slice(0,8).map(product=><ProductCard key={product.id} product={product}/>)}</div> : <div className="panel p-8 text-center"><h3 className="text-lg font-bold">قريباً ستظهر المنتجات هنا</h3><p className="mt-2 text-sm text-white/45">أضف المنتجات من لوحة إدارة المتجر بعد تفعيل صلاحية المالك.</p></div>}
       </section>
       <section id="about" className="container pb-24 text-center"><h2 className="text-2xl font-black">RETRO STORE</h2><p className="mt-3 text-sm text-white/40">متجر متخصص بالأجهزة الإلكترونية والريترو والملحقات.</p></section>
     </>
