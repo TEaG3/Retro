@@ -54,7 +54,7 @@ export default function HomePage() {
 
       <section id="featured" className="container pb-20">
         <div className="panel flex flex-col items-start justify-between gap-6 overflow-hidden p-8 md:flex-row md:items-center md:p-12">
-          <div><p className="text-xs tracking-[.2em] text-retro-pink">COMING INTO FOCUS</p><h2 className="mt-3 text-3xl font-black">قريباً: مجموعة المنتجات</h2><p className="mt-3 max-w-xl leading-8 text-white/50">سيتم ربط هذه الواجهة بقاعدة بيانات Supabase لعرض المنتجات والأسعار والمخزون الفعلي.</p></div>
+          <div><p className="text-xs tracking-[.2em] text-retro-pink">COMING INTO FOCUS</p><h2 className="mt-3 text-3xl font-black">قريباً: مجموعة المنتجات</h2><p className="mt-3 max-w-xl leading-8 text-white/50">سيتم ربط هذه الواجهة بقاعدة بيانات Cloudflare D1 لعرض المنتجات والأسعار والمخزون الفعلي.</p></div>
           <Link href="/search" className="whitespace-nowrap rounded-xl border border-retro-cyan/40 px-5 py-3 text-sm text-retro-cyan hover:bg-retro-cyan/10">صفحة المنتجات <ArrowLeft className="mr-2 inline" size={16}/></Link>
         </div>
       </section>
