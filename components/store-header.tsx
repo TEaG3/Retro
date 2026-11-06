@@ -1,6 +1,7 @@
-import Link from "next/link";
-import { Search, ShoppingBag, Zap } from "lucide-react";\nimport { useCart } from "@/components/cart-provider";\n\n"use client";
+"use client";
 
+import Link from "next/link";
+import { Search, ShoppingBag, Zap } from "lucide-react";\nimport { useCart } from "@/components/cart-provider";\n\n
 export function StoreHeader() {\n  const { count } = useCart();
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07060e]/90 backdrop-blur-xl">
