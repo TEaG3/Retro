@@ -38,3 +38,27 @@ export async function POST(request: Request) {
     return Response.json({ error: "تعذر حفظ المنتج. تحقق من عدم تكرار الرابط المختصر." }, { status: 409 });
   }
 }
+
+export async function PATCH(request: Request) {
+  if (!await isStoreOwnerRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
+  const body = await request.json().catch(() => null);
+  const parsed = z.object({
+    id: z.string().min(1),
+    is_active: z.boolean().optional(),
+    stock_quantity: z.number().int().nonnegative().optional(),
+    price_iqd: z.number().int().nonnegative().optional(),
+    sort_order: z.number().int().optional()
+  }).safeParse(body);
+  if (!parsed.success) return Response.json({ error: "بيانات التعديل غير صحيحة." }, { status: 400 });
+  const p = parsed.data;
+  const sets: string[] = [];
+  const values: (string | number)[] = [];
+  if (p.is_active !== undefined) { sets.push("is_active = ?"); values.push(p.is_active ? 1 : 0); }
+  if (p.stock_quantity !== undefined) { sets.push("stock_quantity = ?"); values.push(p.stock_quantity); }
+  if (p.price_iqd !== undefined) { sets.push("price_iqd = ?"); values.push(p.price_iqd); }
+  if (p.sort_order !== undefined) { sets.push("sort_order = ?"); values.push(p.sort_order); }
+  if (!sets.length) return Response.json({ error: "لا توجد تغييرات." }, { status: 400 });
+  values.push(p.id);
+  const result = await getDb().prepare(`UPDATE products SET ${sets.join(", ")}, updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(...values).run();
+  return result.meta.changes ? Response.json({ ok: true }) : Response.json({ error: "المنتج غير موجود." }, { status: 404 });
+}
