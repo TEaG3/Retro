@@ -1,7 +1,12 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { verifyStoreAdmin } from "@/lib/admin";
 import { AdminLogoutButton } from "@/components/admin-logout-button";
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+export const dynamic="force-dynamic";
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const jar=await cookies();
+  const authorized=await verifyStoreAdmin(jar.get("retro_admin_session")?.value??null);
   return (
     <div className="min-h-screen bg-[#080711] text-[#f5f3ff]">
       <header className="border-b border-white/10 bg-[#100e1d]">
@@ -9,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin" className="font-black tracking-[.16em]">RETRO <span className="text-retro-cyan">CONTROL</span></Link>
           <div className="flex items-center gap-2">
             <Link href="/" className="rounded-lg border border-white/15 px-4 py-2 text-sm text-white/70 hover:border-retro-cyan/50">العودة إلى المتجر</Link>
-            <AdminLogoutButton/>
+            {authorized&&<AdminLogoutButton/>}
           </div>
         </div>
       </header>
