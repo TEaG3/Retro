@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { isStoreAdminRequest } from "@/lib/admin";
+import { isSameOriginAdminMutation, isStoreAdminRequest } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 const statusSchema = z.object({ id: z.string().min(1), status: z.enum(["pending","confirmed","preparing","shipped","delivered","cancelled"]) });
@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   return Response.json({ orders: orders.results.map((order) => ({ ...order, items: byOrder.get(String(order.id)) ?? [] })) });
 }
 export async function PATCH(request: Request) {
+  if (!isSameOriginAdminMutation(request)) return Response.json({ error: "طلب غير صالح." }, { status: 403 });
   if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const parsed = statusSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "حالة الطلب غير صحيحة." }, { status: 400 });
