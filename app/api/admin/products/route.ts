@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { isStoreAdminRequest } from "@/lib/admin";
+import { isSameOriginAdminMutation, isStoreAdminRequest } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 const productSchema = z.object({
@@ -23,6 +23,7 @@ export async function GET(request: Request) {
   return Response.json({ products: result.results });
 }
 export async function POST(request: Request) {
+  if (!isSameOriginAdminMutation(request)) return Response.json({ error: "طلب غير صالح." }, { status: 403 });
   if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const parsed = productSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "بيانات المنتج غير مكتملة أو غير صحيحة." }, { status: 400 });
@@ -40,6 +41,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (!isSameOriginAdminMutation(request)) return Response.json({ error: "طلب غير صالح." }, { status: 403 });
   if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const body = await request.json().catch(() => null);
   const parsed = z.object({
