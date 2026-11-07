@@ -32,7 +32,7 @@ export async function verifyAdminSession(cookieValue: string | null): Promise<st
   const [id, token, extra] = cookieValue.split(".");
   if (!id || !token || extra !== undefined) return null;
   const env = envAuth();
-  if (!env.ADMIN_AUTH_SECRET) return null;
+  if (!env.ADMIN_AUTH_SECRET || env.ADMIN_AUTH_SECRET.length < 32) return null;
   try {
     const session = await getDb().prepare(
       "SELECT email,token_hash,expires_at,revoked_at FROM admin_sessions WHERE id=?"
