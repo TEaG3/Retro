@@ -1,7 +1,7 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { isStoreOwnerRequest, requestEmail } from "@/lib/admin";
+import { isSameOriginAdminMutation, isStoreOwnerRequest, requestEmail } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 const schema = z.object({ email: z.string().email().max(254) });
