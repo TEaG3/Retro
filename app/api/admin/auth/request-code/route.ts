@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const email=parsed.data.email.trim().toLowerCase();
   const env=getCloudflareContext().env as unknown as {OWNER_EMAIL?:string;RESEND_API_KEY?:string;ADMIN_AUTH_SECRET?:string};
   const owner=env.OWNER_EMAIL?.trim().toLowerCase();
-  if (!owner || !env.RESEND_API_KEY || !env.ADMIN_AUTH_SECRET) return Response.json({error:"إعداد بريد المالك أو أسرار تسجيل الدخول غير مكتمل."},{status:503});
+  if (!owner || !env.RESEND_API_KEY || !env.ADMIN_AUTH_SECRET || env.ADMIN_AUTH_SECRET.length < 32) return Response.json({error:"إعداد بريد المالك أو أسرار تسجيل الدخول غير مكتمل."},{status:503});
   const isOwner=email===owner;
   if (!isOwner) {
     const admin=await getDb().prepare("SELECT is_active FROM admin_users WHERE email=? COLLATE NOCASE").bind(email).first<{is_active:number}>();
