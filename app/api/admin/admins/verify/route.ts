@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 const schema = z.object({ email:z.string().email().max(254), code:z.string().regex(/^\d{6}$/) });
 
 export async function POST(request:Request) {
+  if (!isSameOriginAdminMutation(request)) return Response.json({ error: "طلب غير صالح." }, { status: 403 });
   if (!await isStoreOwnerRequest(request)) return Response.json({error:"غير مصرح"},{status:401});
   const parsed=schema.safeParse(await request.json().catch(()=>null));
   if(!parsed.success) return Response.json({error:"بيانات التحقق غير صحيحة."},{status:400});
