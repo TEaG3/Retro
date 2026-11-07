@@ -13,6 +13,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!isSameOriginAdminMutation(request)) return Response.json({ error: "طلب غير صالح." }, { status: 403 });
   if (!await isStoreOwnerRequest(request)) return Response.json({error:"غير مصرح"},{status:401});
   const parsed = schema.safeParse(await request.json().catch(()=>null));
   if (!parsed.success) return Response.json({error:"البريد الإلكتروني غير صحيح."},{status:400});
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  if (!isSameOriginAdminMutation(request)) return Response.json({ error: "طلب غير صالح." }, { status: 403 });
   if (!await isStoreOwnerRequest(request)) return Response.json({error:"غير مصرح"},{status:401});
   const email = new URL(request.url).searchParams.get("email")?.trim().toLowerCase();
   if (!email) return Response.json({error:"البريد مطلوب."},{status:400});
