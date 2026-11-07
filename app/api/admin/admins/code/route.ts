@@ -2,14 +2,10 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { isStoreOwnerRequest, requestEmail } from "@/lib/admin";
+import { hashVerificationCode } from "@/lib/otp";
 
 export const dynamic = "force-dynamic";
 const schema = z.object({ email: z.string().email().max(254) });
-
-async function hash(value: string) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2,"0")).join("");
-}
 
 export async function POST(request: Request) {
   if (!await isStoreOwnerRequest(request)) return Response.json({error:"غير مصرح"},{status:401});
@@ -27,7 +23,7 @@ export async function POST(request: Request) {
   const recent = await db.prepare("SELECT COUNT(*) AS total FROM admin_verification_codes WHERE created_at >= datetime('now','-10 minutes')").first<{total:number}>();
   if ((recent?.total ?? 0) >= 5) return Response.json({error:"تم تجاوز عدد طلبات الرموز. حاول بعد قليل."},{status:429});
   const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6,"0");
-  const codeHash = await hash(code);
+  const codeHash = await hashVerificationCode(code, env.RESEND_API_KEY);
   const id = crypto.randomUUID();
   await db.prepare("INSERT INTO admin_verification_codes(id,target_email,code_hash,expires_at,created_by) VALUES(?,?,?,?,?)").bind(id,target,codeHash,Math.floor(Date.now()/1000)+600,actor??owner).run();
   const sent = await fetch("https://api.resend.com/emails",{
