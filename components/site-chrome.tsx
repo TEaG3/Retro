@@ -11,7 +11,7 @@ export function SiteChrome({ children }: { children: React.ReactNode }) {
   return (
     <>
       {!isAdmin && <StoreHeader />}
-      <main>{children}</main>
+      {isAdmin ? <div>{children}</div> : <main>{children}</main>}
       {!isAdmin && <WhatsAppContact />}
       {!isAdmin && (
         <footer className="mt-20 border-t border-white/10 py-8 text-center text-sm text-white/45">
