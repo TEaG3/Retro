@@ -26,8 +26,7 @@ export async function POST(request: Request) {
   if (!targetAdmin?.is_active) return Response.json({error:"أضف المسؤول الاحتياطي أولاً بصلاحية مدير."},{status:404});
   const recent = await db.prepare("SELECT COUNT(*) AS total FROM admin_verification_codes WHERE created_at >= datetime('now','-10 minutes')").first<{total:number}>();
   if ((recent?.total ?? 0) >= 5) return Response.json({error:"تم تجاوز عدد طلبات الرموز. حاول بعد قليل."},{status:429});
-  const bytes = crypto.getRandomValues(new Uint8Array(4));
-  const code = String(((bytes[0]<<24)|(bytes[1]<<16)|(bytes[2]<<8)|bytes[3])>>>0).slice(0,6).padStart(6,"0");
+  const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1_000_000).padStart(6,"0");
   const codeHash = await hash(code);
   const id = crypto.randomUUID();
   await db.prepare("INSERT INTO admin_verification_codes(id,target_email,code_hash,expires_at,created_by) VALUES(?,?,?,?,?)").bind(id,target,codeHash,Math.floor(Date.now()/1000)+600,actor??owner).run();
