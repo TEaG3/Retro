@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/lib/db";
-import { isStoreOwnerRequest, requestEmail } from "@/lib/admin";
+import { isSameOriginAdminMutation, isStoreOwnerRequest, requestEmail } from "@/lib/admin";
 import { hashVerificationCode } from "@/lib/otp";
 
 export const dynamic = "force-dynamic";
