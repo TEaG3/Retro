@@ -22,8 +22,11 @@ export async function POST(request: Request) {
   const env = getCloudflareContext().env as unknown as {OWNER_EMAIL?:string};
   if (email === env.OWNER_EMAIL?.trim().toLowerCase()) return Response.json({error:"بريد المالك لا يضاف كمسؤول احتياطي."},{status:400});
   try {
-    await getDb().prepare("INSERT INTO admin_users(email,role,is_active) VALUES(?, 'manager', 1) ON CONFLICT(email) DO UPDATE SET role='manager', is_active=1, updated_at=CURRENT_TIMESTAMP").bind(email).run();
-    await getDb().prepare("INSERT INTO admin_audit_log(id,actor_email,action,target_email) VALUES(?,?,?,?)").bind(crypto.randomUUID(),actor??"owner","admin_manager_added",email).run();
+    await getDb().batch([
+      getDb().prepare("INSERT INTO admin_users(email,role,is_active) VALUES(?, 'manager', 1) ON CONFLICT(email) DO UPDATE SET role='manager', is_active=1, updated_at=CURRENT_TIMESTAMP").bind(email),
+      getDb().prepare("UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE email=? COLLATE NOCASE AND revoked_at IS NULL").bind(email),
+      getDb().prepare("INSERT INTO admin_audit_log(id,actor_email,action,target_email) VALUES(?,?,?,?)").bind(crypto.randomUUID(),actor??"owner","admin_manager_added",email)
+    ]);
     return Response.json({ok:true,email,role:"manager"});
   } catch { return Response.json({error:"تعذر إضافة المسؤول. تحقق من تطبيق ترحيل قاعدة البيانات."},{status:500}); }
 }
@@ -34,7 +37,10 @@ export async function DELETE(request: Request) {
   const email = new URL(request.url).searchParams.get("email")?.trim().toLowerCase();
   if (!email) return Response.json({error:"البريد مطلوب."},{status:400});
   const actor = await requestEmail(request);
-  await getDb().prepare("UPDATE admin_users SET is_active=0, updated_at=CURRENT_TIMESTAMP WHERE email=? COLLATE NOCASE").bind(email).run();
-  await getDb().prepare("INSERT INTO admin_audit_log(id,actor_email,action,target_email) VALUES(?,?,?,?)").bind(crypto.randomUUID(),actor??"owner","admin_revoked",email).run();
+  await getDb().batch([
+    getDb().prepare("UPDATE admin_users SET is_active=0, updated_at=CURRENT_TIMESTAMP WHERE email=? COLLATE NOCASE").bind(email),
+    getDb().prepare("UPDATE admin_sessions SET revoked_at=CURRENT_TIMESTAMP WHERE email=? COLLATE NOCASE AND revoked_at IS NULL").bind(email),
+    getDb().prepare("INSERT INTO admin_audit_log(id,actor_email,action,target_email) VALUES(?,?,?,?)").bind(crypto.randomUUID(),actor??"owner","admin_revoked",email)
+  ]);
   return Response.json({ok:true});
 }
