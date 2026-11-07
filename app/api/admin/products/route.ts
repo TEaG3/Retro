@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { isStoreOwnerRequest } from "@/lib/admin";
+import { isStoreAdminRequest } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 const productSchema = z.object({
@@ -18,12 +18,12 @@ const productSchema = z.object({
   image_url: z.string().url().max(2000).nullable().optional()
 });
 export async function GET(request: Request) {
-  if (!await isStoreOwnerRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
+  if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const result = await getDb().prepare(`SELECT p.*, (SELECT image_url FROM product_images i WHERE i.product_id=p.id ORDER BY sort_order,id LIMIT 1) image_url FROM products p ORDER BY sort_order,created_at DESC`).all();
   return Response.json({ products: result.results });
 }
 export async function POST(request: Request) {
-  if (!await isStoreOwnerRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
+  if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const parsed = productSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "بيانات المنتج غير مكتملة أو غير صحيحة." }, { status: 400 });
   const p = parsed.data, id = p.id || crypto.randomUUID(), db = getDb();
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  if (!await isStoreOwnerRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
+  if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const body = await request.json().catch(() => null);
   const parsed = z.object({
     id: z.string().min(1),
