@@ -1,55 +1,96 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/lib/db";
+import { hashVerificationCode } from "@/lib/otp";
 
-type AdminEnv = { CF_ACCESS_TEAM_DOMAIN?: string; CF_ACCESS_AUD?: string; OWNER_EMAIL?: string };
+type AuthEnv = { OWNER_EMAIL?: string; ADMIN_AUTH_SECRET?: string };
+const COOKIE_NAME = "retro_admin_session";
+const SESSION_SECONDS = 12 * 60 * 60;
 
-async function accessEmail(token: string | null): Promise<string | null> {
-  if (!token) return null;
-  try {
-    const env = getCloudflareContext().env as unknown as AdminEnv;
-    const team = env.CF_ACCESS_TEAM_DOMAIN?.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const audiences = env.CF_ACCESS_AUD?.split(",").map((value) => value.trim()).filter(Boolean);
-    if (!team || !audiences?.length) return null;
-    const issuer = `https://${team}`;
-    const jwks = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
-    const { payload } = await jwtVerify(token, jwks, { issuer, audience: audiences });
-    return typeof payload.email === "string" ? payload.email.trim().toLowerCase() : null;
-  } catch { return null; }
+function envAuth(): AuthEnv {
+  return getCloudflareContext().env as unknown as AuthEnv;
+}
+
+function readCookie(header: string | null, name: string): string | null {
+  if (!header) return null;
+  for (const part of header.split(";")) {
+    const [key, ...value] = part.trim().split("=");
+    if (key === name) return decodeURIComponent(value.join("="));
+  }
+  return null;
+}
+
+export function adminCookieValue(request: Request): string | null {
+  return readCookie(request.headers.get("cookie"), COOKIE_NAME);
 }
 
 export async function requestEmail(request: Request): Promise<string | null> {
-  return accessEmail(request.headers.get("cf-access-jwt-assertion"));
+  return verifyAdminSession(adminCookieValue(request));
 }
 
-export async function verifyStoreOwner(token: string | null): Promise<boolean> {
-  const email = await accessEmail(token);
-  const env = getCloudflareContext().env as unknown as AdminEnv;
-  return !!email && !!env.OWNER_EMAIL && email === env.OWNER_EMAIL.trim().toLowerCase();
-}
-
-export async function verifyStoreAdmin(token: string | null): Promise<boolean> {
-  const email = await accessEmail(token);
-  if (!email) return false;
-  const env = getCloudflareContext().env as unknown as AdminEnv;
-  if (env.OWNER_EMAIL && email === env.OWNER_EMAIL.trim().toLowerCase()) return true;
+export async function verifyAdminSession(cookieValue: string | null): Promise<string | null> {
+  if (!cookieValue) return null;
+  const [id, token, extra] = cookieValue.split(".");
+  if (!id || !token || extra !== undefined) return null;
+  const env = envAuth();
+  if (!env.ADMIN_AUTH_SECRET) return null;
   try {
-    const user = await getDb().prepare("SELECT is_active FROM admin_users WHERE email = ? COLLATE NOCASE").bind(email).first<{is_active:number}>();
-    return user?.is_active === 1;
-  } catch { return false; }
+    const session = await getDb().prepare(
+      "SELECT email,token_hash,expires_at,revoked_at FROM admin_sessions WHERE id=?"
+    ).bind(id).first<{email:string;token_hash:string;expires_at:number;revoked_at:string|null}>();
+    if (!session || session.revoked_at || session.expires_at < Math.floor(Date.now()/1000)) return null;
+    const supplied = await hashVerificationCode(token, env.ADMIN_AUTH_SECRET);
+    if (supplied !== session.token_hash) return null;
+    const email = session.email.trim().toLowerCase();
+    const owner = env.OWNER_EMAIL?.trim().toLowerCase();
+    if (owner && email === owner) return email;
+    const admin = await getDb().prepare(
+      "SELECT is_active FROM admin_users WHERE email=? COLLATE NOCASE"
+    ).bind(email).first<{is_active:number}>();
+    return admin?.is_active === 1 ? email : null;
+  } catch {
+    return null;
+  }
 }
 
-export async function verifyStoreFullAdmin(token: string | null): Promise<boolean> {
-  const email = await accessEmail(token);
+export async function verifyStoreOwner(cookieValue: string | null): Promise<boolean> {
+  const email = await verifyAdminSession(cookieValue);
+  const owner = envAuth().OWNER_EMAIL?.trim().toLowerCase();
+  return !!email && !!owner && email === owner;
+}
+
+export async function verifyStoreAdmin(cookieValue: string | null): Promise<boolean> {
+  return !!(await verifyAdminSession(cookieValue));
+}
+
+export async function verifyStoreFullAdmin(cookieValue: string | null): Promise<boolean> {
+  const email = await verifyAdminSession(cookieValue);
   if (!email) return false;
-  const env = getCloudflareContext().env as unknown as AdminEnv;
-  if (env.OWNER_EMAIL && email === env.OWNER_EMAIL.trim().toLowerCase()) return true;
+  const owner = envAuth().OWNER_EMAIL?.trim().toLowerCase();
+  if (owner && email === owner) return true;
   try {
-    const user = await getDb().prepare("SELECT role,is_active FROM admin_users WHERE email = ? COLLATE NOCASE").bind(email).first<{role:string;is_active:number}>();
-    return user?.is_active === 1 && user.role === "full_admin";
-  } catch { return false; }
+    const admin = await getDb().prepare(
+      "SELECT role,is_active FROM admin_users WHERE email=? COLLATE NOCASE"
+    ).bind(email).first<{role:string;is_active:number}>();
+    return admin?.is_active === 1 && admin.role === "full_admin";
+  } catch {
+    return false;
+  }
 }
 
-export const isStoreOwnerRequest = (request: Request) => verifyStoreOwner(request.headers.get("cf-access-jwt-assertion"));
-export const isStoreAdminRequest = (request: Request) => verifyStoreAdmin(request.headers.get("cf-access-jwt-assertion"));
-export const isStoreFullAdminRequest = (request: Request) => verifyStoreFullAdmin(request.headers.get("cf-access-jwt-assertion"));
+export async function isStoreOwnerRequest(request: Request): Promise<boolean> {
+  return verifyStoreOwner(adminCookieValue(request));
+}
+
+export async function isStoreAdminRequest(request: Request): Promise<boolean> {
+  return verifyStoreAdmin(adminCookieValue(request));
+}
+
+export async function isStoreFullAdminRequest(request: Request): Promise<boolean> {
+  return verifyStoreFullAdmin(adminCookieValue(request));
+}
+
+export function adminSessionCookie(value: string, maxAge = SESSION_SECONDS): string {
+  return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
+}
+
+export const adminSessionLifetimeSeconds = SESSION_SECONDS;
