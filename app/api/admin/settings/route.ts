@@ -11,6 +11,7 @@ export async function GET(request:Request){
  return Response.json({whatsapp_number:row?.setting_value??""});
 }
 export async function PUT(request:Request){
+ if(!isSameOriginAdminMutation(request)) return Response.json({error:"طلب غير صالح."},{status:403});
  if(!await isStoreFullAdminRequest(request)) return Response.json({error:"غير مصرح"},{status:401});
  const parsed=schema.safeParse(await request.json().catch(()=>null));
  if(!parsed.success) return Response.json({error:"رقم واتساب غير صحيح. استخدم الصيغة الدولية."},{status:400});
