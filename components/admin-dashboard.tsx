@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminSecuritySettings } from "@/components/admin-security-settings";
 import { useCallback, useEffect, useState } from "react";
 
 type Product = { id:string; name:string; slug:string; price_iqd:number; stock_quantity:number; is_active:number; image_url?:string|null };
@@ -38,6 +39,7 @@ export function AdminDashboard() {
     if(!response.ok){setError("تعذر تحديث حالة الطلب");return;} await refresh();
   }
   return <div className="space-y-10">
+    <AdminSecuritySettings/>
     {error&&<p role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">{error}</p>}
     <section className="panel p-6">
       <h2 className="text-xl font-bold">إضافة منتج</h2>
