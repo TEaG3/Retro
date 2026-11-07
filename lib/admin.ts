@@ -9,11 +9,11 @@ async function accessEmail(token: string | null): Promise<string | null> {
   try {
     const env = getCloudflareContext().env as unknown as AdminEnv;
     const team = env.CF_ACCESS_TEAM_DOMAIN?.replace(/^https?:\/\//, "").replace(/\/$/, "");
-    const audience = env.CF_ACCESS_AUD;
-    if (!team || !audience) return null;
+    const audiences = env.CF_ACCESS_AUD?.split(",").map((value) => value.trim()).filter(Boolean);
+    if (!team || !audiences?.length) return null;
     const issuer = `https://${team}`;
     const jwks = createRemoteJWKSet(new URL(`${issuer}/cdn-cgi/access/certs`));
-    const { payload } = await jwtVerify(token, jwks, { issuer, audience });
+    const { payload } = await jwtVerify(token, jwks, { issuer, audience: audiences });
     return typeof payload.email === "string" ? payload.email.trim().toLowerCase() : null;
   } catch { return null; }
 }
