@@ -26,6 +26,8 @@ button, input, textarea { font: inherit; }
 :root[data-theme="light"] [class*="bg-[#07060e]"] { background-color: rgba(255,255,255,.94) !important; }
 :root[data-theme="light"] [class*="bg-[#0c0a18]"] { background-color: #f0eff7 !important; }
 :root[data-theme="light"] [class*="text-white/"] { color: #55536a !important; }
+:root[data-theme="light"] [class~="text-white"] { color: #19172a !important; }
+:root[data-theme="light"] [class*="bg-[#121024]"] { background-color: #fff !important; }
 :root[data-theme="light"] [class*="border-white/"] { border-color: rgba(30,26,65,.14) !important; }
 :root[data-theme="light"] [class*="bg-white/"] { background-color: rgba(30,26,65,.055) !important; }
 :root[data-theme="light"] input,
