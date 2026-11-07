@@ -19,7 +19,7 @@ export async function POST(request:Request){
  if(!parsed.success)return Response.json({error:"بيانات التحقق غير صحيحة."},{status:400});
  const email=parsed.data.email.trim().toLowerCase();
  const env=getCloudflareContext().env as unknown as {OWNER_EMAIL?:string;ADMIN_AUTH_SECRET?:string};
- if(!env.ADMIN_AUTH_SECRET)return Response.json({error:"سر جلسة الإدارة غير مضبوط."},{status:503});
+ if(!env.ADMIN_AUTH_SECRET || env.ADMIN_AUTH_SECRET.length < 32)return Response.json({error:"سر جلسة الإدارة غير مضبوط."},{status:503});
  const owner=env.OWNER_EMAIL?.trim().toLowerCase();
  if(email!==owner){
   const admin=await getDb().prepare("SELECT is_active FROM admin_users WHERE email=? COLLATE NOCASE").bind(email).first<{is_active:number}>();
