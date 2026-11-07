@@ -1,11 +1,11 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
-import { isStoreOwnerRequest } from "@/lib/admin";
+import { isStoreAdminRequest } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 const statusSchema = z.object({ id: z.string().min(1), status: z.enum(["pending","confirmed","preparing","shipped","delivered","cancelled"]) });
 export async function GET(request: Request) {
-  if (!await isStoreOwnerRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
+  if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const db = getDb();
   const orders = await db.prepare("SELECT * FROM orders ORDER BY created_at DESC LIMIT 200").all<Record<string,unknown>>();
   const items = await db.prepare("SELECT * FROM order_items ORDER BY id ASC").all<Record<string,unknown>>();
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   return Response.json({ orders: orders.results.map((order) => ({ ...order, items: byOrder.get(String(order.id)) ?? [] })) });
 }
 export async function PATCH(request: Request) {
-  if (!await isStoreOwnerRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
+  if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
   const parsed = statusSchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ error: "حالة الطلب غير صحيحة." }, { status: 400 });
   const db = getDb();
