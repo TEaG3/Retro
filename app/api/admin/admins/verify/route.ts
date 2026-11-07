@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/lib/db";
 import { isStoreOwnerRequest, requestEmail } from "@/lib/admin";
 import { hashVerificationCode } from "@/lib/otp";
@@ -13,7 +14,7 @@ export async function POST(request:Request) {
   const email=parsed.data.email.trim().toLowerCase(), actor=await requestEmail(request), db=getDb();
   const row=await db.prepare("SELECT id,code_hash,expires_at,attempts FROM admin_verification_codes WHERE target_email=? COLLATE NOCASE AND consumed_at IS NULL ORDER BY created_at DESC LIMIT 1").bind(email).first<{id:string;code_hash:string;expires_at:number;attempts:number}>();
   if(!row || row.expires_at<Math.floor(Date.now()/1000) || row.attempts>=5) return Response.json({error:"انتهت صلاحية الرمز أو لم يعد صالحاً. اطلب رمزاً جديداً."},{status:400});
-  const env = (await import("@opennextjs/cloudflare")).getCloudflareContext().env as unknown as {RESEND_API_KEY?:string};
+  const env = getCloudflareContext().env as unknown as {RESEND_API_KEY?:string};
   if (!env.RESEND_API_KEY) return Response.json({error:"مفتاح التحقق غير مضبوط."},{status:503});
   const supplied=await hashVerificationCode(parsed.data.code, env.RESEND_API_KEY);
   if(supplied!==row.code_hash) {
