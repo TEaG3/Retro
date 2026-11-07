@@ -9,6 +9,7 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>("dark");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
@@ -16,10 +17,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (saved === "light" || saved === "dark") setTheme(saved);
     } catch {
       // Keep the default dark theme when storage is unavailable.
+    } finally {
+      setReady(true);
     }
   }, []);
 
   useEffect(() => {
+    if (!ready) return;
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
     try {
@@ -27,7 +31,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // The selected theme still applies for the current page session.
     }
-  }, [theme]);
+  }, [ready, theme]);
 
   const value = useMemo(
     () => ({ theme, toggleTheme: () => setTheme((current) => current === "dark" ? "light" : "dark") }),
