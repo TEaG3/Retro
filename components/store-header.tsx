@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Search, ShoppingBag, Zap } from "lucide-react";
+import { Search, ShoppingBag, Zap, Sun, Moon } from "lucide-react";
 import { useCart } from "@/components/cart-provider";
+import { useTheme } from "@/components/theme-provider";
 
 export function StoreHeader() {
   const { count } = useCart();
+  const { theme, toggleTheme } = useTheme();
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-[#07060e]/90 backdrop-blur-xl">
-      <div className="container flex h-[76px] items-center justify-between gap-4">
+      <div className="container flex h-[76px] items-center justify-between gap-3">
         <Link href="/" className="flex items-center gap-3" aria-label="RETRO Store الرئيسية">
           <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-retro-pink to-purple-700 shadow-neon">
             <Zap size={22} />
@@ -23,9 +25,12 @@ export function StoreHeader() {
           <Link href="/#featured" className="hover:text-retro-cyan">المنتجات</Link>
           <Link href="/#about" className="hover:text-retro-cyan">عن المتجر</Link>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          <button type="button" onClick={toggleTheme} className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 transition hover:border-retro-cyan/60" aria-label={theme === "dark" ? "التبديل إلى الوضع الفاتح" : "التبديل إلى الوضع الداكن"} title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}>
+            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
           <Link href="/search" className="grid h-10 w-10 place-items-center rounded-xl border border-white/10 hover:border-retro-cyan/50" aria-label="بحث"><Search size={18}/></Link>
-          <Link href="/cart" className="flex h-10 items-center gap-2 rounded-xl bg-retro-pink px-4 text-sm font-bold text-black hover:brightness-110"><ShoppingBag size={17}/> السلة <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs">{count}</span></Link>
+          <Link href="/cart" className="flex h-10 items-center gap-2 rounded-xl bg-retro-pink px-3 text-sm font-bold text-black hover:brightness-110"><ShoppingBag size={17}/> <span className="hidden sm:inline">السلة</span> <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs">{count}</span></Link>
         </div>
       </div>
     </header>
