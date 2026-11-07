@@ -34,3 +34,8 @@ CREATE TABLE IF NOT EXISTS admin_audit_log (
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS admin_audit_created_idx ON admin_audit_log(created_at DESC);
+
+-- Enforce the one-active-full-admin rule at the database layer as well.
+CREATE UNIQUE INDEX IF NOT EXISTS one_active_full_admin_idx
+  ON admin_users(role)
+  WHERE role='full_admin' AND is_active=1;
