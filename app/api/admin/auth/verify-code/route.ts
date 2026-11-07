@@ -37,10 +37,12 @@ export async function POST(request:Request){
  const sessionId=crypto.randomUUID();
  const tokenHash=await hashVerificationCode(token,env.ADMIN_AUTH_SECRET);
  const expiry=Math.floor(Date.now()/1000)+adminSessionLifetimeSeconds;
- await getDb().batch([
-  getDb().prepare("UPDATE admin_login_codes SET consumed_at=CURRENT_TIMESTAMP WHERE id=?").bind(row.id),
-  getDb().prepare("INSERT INTO admin_sessions(id,email,token_hash,expires_at) VALUES(?,?,?,?)").bind(sessionId,email,tokenHash,expiry)
+ const committed=await getDb().batch([
+  getDb().prepare("INSERT INTO admin_sessions(id,email,token_hash,expires_at) SELECT ?,?,?,? WHERE EXISTS (SELECT 1 FROM admin_login_codes WHERE id=? AND consumed_at IS NULL AND expires_at>=? AND attempts<5)").bind(sessionId,email,tokenHash,expiry,row.id,Math.floor(Date.now()/1000)),
+  getDb().prepare("UPDATE admin_login_codes SET consumed_at=CURRENT_TIMESTAMP WHERE id=? AND consumed_at IS NULL AND expires_at>=? AND attempts<5").bind(row.id,Math.floor(Date.now()/1000)),
+  getDb().prepare("INSERT INTO admin_audit_log(id,actor_email,action,target_email) VALUES(?,?,?,?)").bind(crypto.randomUUID(),email,"admin_login",email)
  ]);
+ if(committed[0]?.meta.changes!==1 || committed[1]?.meta.changes!==1) return Response.json({error:"تم استخدام الرمز مسبقاً. اطلب رمزاً جديداً."},{status:409});
  const response=Response.json({ok:true});
  response.headers.append("Set-Cookie",adminSessionCookie(sessionId+"."+token,adminSessionLifetimeSeconds));
  response.headers.set("Cache-Control","no-store");
