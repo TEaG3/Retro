@@ -89,6 +89,12 @@ export async function isStoreFullAdminRequest(request: Request): Promise<boolean
   return verifyStoreFullAdmin(adminCookieValue(request));
 }
 
+export function isSameOriginAdminMutation(request: Request): boolean {
+  const origin = request.headers.get("origin");
+  if (!origin) return false;
+  try { return new URL(origin).origin === new URL(request.url).origin; } catch { return false; }
+}
+
 export function adminSessionCookie(value: string, maxAge = SESSION_SECONDS): string {
   return `${COOKIE_NAME}=${encodeURIComponent(value)}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 }
