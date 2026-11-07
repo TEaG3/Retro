@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { verifyStoreOwner } from "@/lib/admin";
+import { verifyStoreAdmin } from "@/lib/admin";
 import { AdminDashboard } from "@/components/admin-dashboard";
 
 export const dynamic = "force-dynamic";
