@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react
 type Product = {
   id: string; category_id: number | null; name: string; slug: string; summary: string | null;
   description: string | null; price_iqd: number; compare_at_price_iqd: number | null;
-  stock_quantity: number; is_active: number; sort_order: number; image_url: string | null;
+  stock_quantity: number; is_active: number; sort_order: number; image_url: string | null; image_urls?: string[];
 };
 type Category = { id: number; name: string; slug: string; description: string | null; sort_order: number; is_active: number; product_count: number };
 type Order = {
@@ -121,7 +121,7 @@ export function AdminDashboard() {
       summary: p.summary ?? "", description: p.description ?? "", price_iqd: String(p.price_iqd),
       compare_at_price_iqd: p.compare_at_price_iqd ? String(p.compare_at_price_iqd) : "",
       stock_quantity: String(p.stock_quantity), is_active: p.is_active === 1,
-      sort_order: String(p.sort_order), image_urls: p.image_url ?? ""
+      sort_order: String(p.sort_order), image_urls: (p.image_urls ?? (p.image_url ? [p.image_url] : [])).join("\n")
     });
     setTab("products");
     window.scrollTo({ top: 0, behavior: "smooth" });
