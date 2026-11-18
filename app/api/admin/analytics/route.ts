@@ -9,6 +9,12 @@ export async function GET(request: Request) {
   }
 
   const db = getDb();
+  await db.batch([
+    db.prepare("DELETE FROM site_visitors WHERE last_seen_at < datetime('now', '-180 days')"),
+    db.prepare("DELETE FROM site_visitor_days WHERE visit_date < date('now', '-365 days')"),
+    db.prepare("DELETE FROM site_page_daily WHERE visit_date < date('now', '-365 days')"),
+    db.prepare("DELETE FROM site_visitor_page_daily WHERE visit_date < date('now', '-365 days')")
+  ]);
   const [today, yesterday, month, viewsToday, pages, visitors] = await Promise.all([
     db.prepare("SELECT COUNT(*) AS total FROM site_visitor_days WHERE visit_date = date('now')").first<{ total: number }>(),
     db.prepare("SELECT COUNT(*) AS total FROM site_visitor_days WHERE visit_date = date('now','-1 day')").first<{ total: number }>(),
