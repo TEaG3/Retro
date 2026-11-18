@@ -19,7 +19,8 @@ type Overview = {
   orders: number; deliveredRevenue: number; needsAttention: number; lowStock: number;
   recentOrders: { id: string; order_number: number; customer_name: string; total_iqd: number; status: string; created_at: string }[];
 };
-type Tab = "overview" | "products" | "categories" | "orders" | "settings" | "audit";
+type Analytics = { visitorsToday: number; visitorsYesterday: number; visitorsLast30Days: number; pageViewsToday: number; popularPages: { path: string; views: number; unique_visitors: number }[]; recentVisitors: { visitor_id: string; visitor_label: string; first_seen_at: string; last_seen_at: string; total_page_views: number; last_path: string }[] };
+type Tab = "overview" | "analytics" | "products" | "categories" | "orders" | "settings" | "audit";
 const money = (n: number) => new Intl.NumberFormat("ar-IQ", { maximumFractionDigits: 0 }).format(n) + " د.ع";
 const statuses: Record<string, string> = {
   pending: "قيد الانتظار", confirmed: "مؤكد", preparing: "قيد التجهيز",
@@ -40,6 +41,7 @@ export function AdminDashboard() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [overview, setOverview] = useState<Overview | null>(null);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [audit, setAudit] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -170,6 +172,13 @@ export function AdminDashboard() {
     notify("تم تحديث حالة الطلب."); await refresh();
   }
 
+  async function loadAnalytics() {
+    const r = await fetch("/api/admin/analytics", { cache: "no-store" });
+    const d = await readJson(r);
+    if (!r.ok) { setError(d.error ?? "تعذر تحميل تحليلات الزوار."); return; }
+    setAnalytics(d as Analytics);
+  }
+
   async function loadAudit() {
     const r = await fetch("/api/admin/audit?limit=50", { cache: "no-store" });
     const d = await readJson(r);
@@ -178,7 +187,7 @@ export function AdminDashboard() {
   }
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "overview", label: "نظرة عامة" }, { id: "products", label: "المنتجات" },
+    { id: "overview", label: "نظرة عامة" }, { id: "analytics", label: "تحليلات الزوار" }, { id: "products", label: "المنتجات" },
     { id: "categories", label: "التصنيفات" }, { id: "orders", label: "الطلبات" },
     { id: "settings", label: "الإعدادات والأمان" }, { id: "audit", label: "سجل التدقيق" }
   ];
@@ -190,7 +199,7 @@ export function AdminDashboard() {
     </div>
 
     <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="أقسام الإدارة">
-      {tabs.map(t => <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "audit") void loadAudit(); }} className={`shrink-0 rounded-xl px-4 py-3 text-sm font-bold transition ${tab === t.id ? "bg-retro-cyan text-black" : "border border-white/10 bg-white/[.03] text-white/65 hover:bg-white/[.08]"}`}>{t.label}</button>)}
+      {tabs.map(t => <button key={t.id} onClick={() => { setTab(t.id); if (t.id === "audit") void loadAudit(); if (t.id === "analytics") void loadAnalytics(); }} className={`shrink-0 rounded-xl px-4 py-3 text-sm font-bold transition ${tab === t.id ? "bg-retro-cyan text-black" : "border border-white/10 bg-white/[.03] text-white/65 hover:bg-white/[.08]"}`}>{t.label}</button>)}
     </nav>
 
     {error && <div role="alert" className="rounded-xl border border-red-400/30 bg-red-400/10 p-4 text-sm text-red-200">{error}<button onClick={() => setError("")} className="mr-3 underline">إغلاق</button></div>}
@@ -213,6 +222,40 @@ export function AdminDashboard() {
         <div className="divide-y divide-white/10">{(overview?.recentOrders ?? []).map(o => <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><div><strong>#{o.order_number} · {o.customer_name}</strong><p className="mt-1 text-xs text-white/40">{new Date(o.created_at.replace(" ", "T") + (o.created_at.includes("Z") ? "" : "Z")).toLocaleString("ar-IQ")}</p></div><div className="text-left"><strong>{money(o.total_iqd)}</strong><p className="mt-1 text-xs text-white/45">{statuses[o.status] ?? o.status}</p></div></div>)}{!overview?.recentOrders?.length && <p className="py-4 text-sm text-white/45">لا توجد طلبات مسجلة بعد.</p>}</div>
       </section>
     </>}
+
+
+    {!loading && tab === "analytics" && <section className="space-y-5">
+      <div className="rounded-xl border border-retro-cyan/20 bg-retro-cyan/[.06] p-4 text-sm leading-7 text-white/65">
+        تعرض هذه الصفحة إحصاءات مجهولة الهوية. يستخدم الموقع معرّفاً عشوائياً للتمييز بين الزيارات، ولا يجمع أسماء الزوار أو عناوين IP أو بيانات المتصفح. زيارات الإدارة مستثناة، وبيانات التحليلات منفصلة عن الطلبات وسجل الإدارة.
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {[
+          ["زوار اليوم", analytics?.visitorsToday ?? 0, "زوار فريدون اليوم"],
+          ["مشاهدات اليوم", analytics?.pageViewsToday ?? 0, "إجمالي فتح الصفحات"],
+          ["زوار أمس", analytics?.visitorsYesterday ?? 0, "للمقارنة اليومية"],
+          ["زوار آخر 30 يوماً", analytics?.visitorsLast30Days ?? 0, "زيارات فريدة خلال 30 يوماً"]
+        ].map(([label,value,sub]) => <article key={String(label)} className="panel p-4 sm:p-5"><p className="text-xs text-white/45">{label}</p><strong className="mt-3 block text-2xl font-black text-retro-cyan">{value}</strong><p className="mt-2 text-xs text-white/35">{sub}</p></article>)}
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="panel p-5">
+          <div className="mb-4 flex items-center justify-between gap-3"><h3 className="font-bold">الأقسام الأكثر زيارة اليوم</h3><button onClick={() => void loadAnalytics()} className="text-xs text-retro-cyan">تحديث</button></div>
+          {analytics?.popularPages.length ? <div className="space-y-4">{analytics.popularPages.map((page,index) => <div key={page.path}>
+            <div className="mb-2 flex items-center justify-between gap-3 text-sm"><span className="min-w-0 truncate" dir="ltr">{index+1}. {page.path}</span><strong className="shrink-0 text-retro-cyan">{page.views} مشاهدة</strong></div>
+            <div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-retro-cyan" style={{width: `${Math.max(3, page.views / Math.max(...analytics.popularPages.map(p=>p.views)) * 100)}%`}} /></div>
+            <p className="mt-1 text-xs text-white/35">{page.unique_visitors} زائر فريد</p>
+          </div>)}</div> : <p className="text-sm text-white/40">لا توجد مشاهدات مسجلة اليوم حتى الآن.</p>}
+        </section>
+        <section className="panel p-5">
+          <h3 className="mb-4 font-bold">آخر الزوار الذين رصدهم الموقع</h3>
+          <div className="max-h-[460px] space-y-2 overflow-auto">{analytics?.recentVisitors.map(visitor => <article key={visitor.visitor_id} className="rounded-lg bg-black/20 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2"><strong className="text-sm text-retro-cyan">{visitor.visitor_label}</strong><span className="text-xs text-white/35">{visitor.total_page_views} مشاهدة إجمالاً</span></div>
+            <p className="mt-2 truncate text-xs text-white/60" dir="ltr">{visitor.last_path}</p>
+            <p className="mt-1 text-[11px] text-white/35">آخر زيارة: {new Date(visitor.last_seen_at.replace(" ","T") + (visitor.last_seen_at.includes("Z") ? "" : "Z")).toLocaleString("ar-IQ")}</p>
+          </article>)}
+          {!analytics?.recentVisitors.length && <p className="text-sm text-white/40">ستظهر بيانات الزوار بعد بدء استقبال الزيارات.</p>}</div>
+        </section>
+      </div>
+    </section>}
 
     {!loading && tab === "products" && <>
       <section className="panel p-5 sm:p-6">
