@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { isStoreAdminRequest } from "@/lib/admin";
+import { recordAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 const categorySchema = z.object({
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
   try {
     const result = await getDb().prepare("INSERT INTO categories(name,slug,description,sort_order,is_active) VALUES(?,?,?,?,?)")
       .bind(c.name,c.slug,c.description ?? null,c.sort_order,c.is_active ? 1 : 0).run();
+    await recordAdminAction(request, "category_created", result.meta.last_row_id, c.name);
     return Response.json({ ok: true, id: result.meta.last_row_id }, { status: 201 });
   } catch {
     return Response.json({ error: "تعذر إنشاء التصنيف. قد يكون الاسم أو الرابط مستخدماً." }, { status: 409 });
@@ -45,7 +47,9 @@ export async function PUT(request: Request) {
   try {
     const result = await getDb().prepare("UPDATE categories SET name=?,slug=?,description=?,sort_order=?,is_active=? WHERE id=?")
       .bind(c.name,c.slug,c.description ?? null,c.sort_order,c.is_active ? 1 : 0,c.id).run();
-    return result.meta.changes ? Response.json({ ok: true }) : Response.json({ error: "التصنيف غير موجود." }, { status: 404 });
+    if (!result.meta.changes) return Response.json({ error: "التصنيف غير موجود." }, { status: 404 });
+    await recordAdminAction(request, "category_updated", c.id, c.name);
+    return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "تعذر تعديل التصنيف. تحقق من عدم تكرار الاسم أو الرابط." }, { status: 409 });
   }
@@ -56,5 +60,7 @@ export async function DELETE(request: Request) {
   const id = Number(new URL(request.url).searchParams.get("id"));
   if (!Number.isSafeInteger(id) || id <= 0) return Response.json({ error: "رقم التصنيف غير صحيح." }, { status: 400 });
   const result = await getDb().prepare("UPDATE categories SET is_active=0 WHERE id=?").bind(id).run();
-  return result.meta.changes ? Response.json({ ok: true, archived: true }) : Response.json({ error: "التصنيف غير موجود." }, { status: 404 });
+  if (!result.meta.changes) return Response.json({ error: "التصنيف غير موجود." }, { status: 404 });
+  await recordAdminAction(request, "category_archived", id);
+  return Response.json({ ok: true, archived: true });
 }
