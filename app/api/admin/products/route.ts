@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { isStoreAdminRequest } from "@/lib/admin";
+import { recordAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 const productSchema = z.object({
@@ -21,13 +22,18 @@ const productSchema = z.object({
 
 export async function GET(request: Request) {
   if (!await isStoreAdminRequest(request)) return Response.json({ error: "غير مصرح" }, { status: 401 });
-  const result = await getDb().prepare(`
-    SELECT p.*,
-      (SELECT image_url FROM product_images i WHERE i.product_id=p.id ORDER BY sort_order,id LIMIT 1) AS image_url,
-      (SELECT COUNT(*) FROM order_items oi WHERE oi.product_id=p.id) AS order_line_count
-    FROM products p ORDER BY p.sort_order,p.created_at DESC
-  `).all();
-  return Response.json({ products: result.results }, { headers: { "Cache-Control": "no-store" } });
+  const db = getDb();
+  const [result, images] = await Promise.all([
+    db.prepare("SELECT p.*, (SELECT COUNT(*) FROM order_items oi WHERE oi.product_id=p.id) AS order_line_count FROM products p ORDER BY p.sort_order,p.created_at DESC").all<Record<string, unknown>>(),
+    db.prepare("SELECT product_id,image_url,sort_order FROM product_images ORDER BY sort_order,id").all<{product_id:string;image_url:string;sort_order:number}>()
+  ]);
+  const byProduct = new Map<string, string[]>();
+  for (const image of images.results) byProduct.set(image.product_id, [...(byProduct.get(image.product_id) ?? []), image.image_url]);
+  return Response.json({ products: result.results.map(product => ({
+    ...product,
+    image_urls: byProduct.get(String(product.id)) ?? [],
+    image_url: byProduct.get(String(product.id))?.[0] ?? null
+  })) }, { headers: { "Cache-Control": "no-store" } });
 }
 
 export async function POST(request: Request) {
@@ -42,6 +48,7 @@ export async function POST(request: Request) {
         .bind(id,p.category_id,p.name,p.slug,p.summary,p.description,p.price_iqd,p.compare_at_price_iqd,p.stock_quantity,p.is_active ? 1 : 0,p.sort_order),
       ...p.image_urls.map((url,index) => db.prepare("INSERT INTO product_images(product_id,image_url,alt_text,sort_order) VALUES(?,?,?,?)").bind(id,url,p.name,index))
     ]);
+    await recordAdminAction(request, "product_created", id, p.name);
     return Response.json({ ok: true, id }, { status: 201 });
   } catch {
     return Response.json({ error: "تعذر حفظ المنتج. تحقق من التصنيف وعدم تكرار الرابط المختصر." }, { status: 409 });
@@ -63,6 +70,7 @@ export async function PUT(request: Request) {
       db.prepare("DELETE FROM product_images WHERE product_id=?").bind(id),
       ...p.image_urls.map((url,index) => db.prepare("INSERT INTO product_images(product_id,image_url,alt_text,sort_order) VALUES(?,?,?,?)").bind(id,url,p.name,index))
     ]);
+    await recordAdminAction(request, "product_updated", id, p.name);
     return Response.json({ ok: true });
   } catch {
     return Response.json({ error: "تعذر تحديث المنتج. تحقق من الرابط والتصنيف." }, { status: 409 });
@@ -87,7 +95,9 @@ export async function PATCH(request: Request) {
   if (!sets.length) return Response.json({ error: "لا توجد تغييرات." }, { status: 400 });
   values.push(p.id);
   const result = await getDb().prepare(`UPDATE products SET ${sets.join(",")},updated_at=CURRENT_TIMESTAMP WHERE id=?`).bind(...values).run();
-  return result.meta.changes ? Response.json({ ok: true }) : Response.json({ error: "المنتج غير موجود." }, { status: 404 });
+  if (!result.meta.changes) return Response.json({ error: "المنتج غير موجود." }, { status: 404 });
+  await recordAdminAction(request, "product_quick_update", p.id, JSON.stringify(p));
+  return Response.json({ ok: true });
 }
 
 export async function DELETE(request: Request) {
@@ -95,5 +105,7 @@ export async function DELETE(request: Request) {
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "معرّف المنتج مطلوب." }, { status: 400 });
   const result = await getDb().prepare("UPDATE products SET is_active=0,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(id).run();
-  return result.meta.changes ? Response.json({ ok: true, archived: true }) : Response.json({ error: "المنتج غير موجود." }, { status: 404 });
+  if (!result.meta.changes) return Response.json({ error: "المنتج غير موجود." }, { status: 404 });
+  await recordAdminAction(request, "product_archived", id);
+  return Response.json({ ok: true, archived: true });
 }
