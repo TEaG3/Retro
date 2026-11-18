@@ -1,19 +1,18 @@
 import Link from "next/link";
-import { getActiveProducts } from "@/lib/store";
+import { getActiveCategories, getActiveProducts } from "@/lib/store";
 import { ProductCard } from "@/components/product-card";
-import { ArrowLeft, Cpu, Gamepad2, Headphones, PackageCheck, ShieldCheck, Truck, Wrench } from "lucide-react";
+import { ArrowLeft, Cpu, Gamepad2, Headphones, PackageCheck, ShieldCheck, Truck, Wrench, Layers } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-const categories = [
-  { title: "أجهزة ريترو", description: "أجهزة الألعاب الكلاسيكية والمحمولة", icon: Gamepad2, color: "text-retro-pink" },
-  { title: "ملحقات وقطع غيار", description: "قطع وملحقات للأجهزة الإلكترونية", icon: Wrench, color: "text-retro-cyan" },
-  { title: "إلكترونيات عامة", description: "تقنيات وأجهزة للاستخدام اليومي", icon: Cpu, color: "text-retro-yellow" },
-  { title: "أدوات ومعدات", description: "معدات وأدوات تقنية مختارة", icon: Headphones, color: "text-purple-300" }
-];
+const categoryIcons = [Gamepad2, Wrench, Cpu, Headphones, Layers];
 
 export default async function HomePage() {
-  const featuredProducts = await getActiveProducts();
+  const [featuredProducts, categories] = await Promise.all([
+    getActiveProducts(),
+    getActiveCategories()
+  ]);
+
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10">
@@ -52,9 +51,21 @@ export default async function HomePage() {
 
       <section id="categories" className="container py-24">
         <div className="mb-10 flex items-end justify-between gap-4"><div><p className="text-xs tracking-[.2em] text-retro-cyan">BROWSE COLLECTIONS</p><h2 className="mt-3 text-3xl font-black md:text-4xl">تسوق حسب القسم</h2></div><span className="hidden text-sm text-white/40 md:block">تقنيات تناسب اهتماماتك</span></div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {categories.map(({title,description,icon:Icon,color},i)=><Link key={title} href={`/search?category=${i+1}`} className="panel group p-6 transition hover:-translate-y-1 hover:border-retro-pink/40"><div className={`mb-10 grid h-14 w-14 place-items-center rounded-2xl bg-white/5 ${color}`}><Icon size={27}/></div><h3 className="text-xl font-bold">{title}</h3><p className="mt-3 text-sm leading-7 text-white/45">{description}</p><div className="mt-7 flex items-center justify-between text-xs text-retro-cyan"><span>استكشف القسم</span><ArrowLeft size={16} className="transition group-hover:-translate-x-1"/></div></Link>)}
-        </div>
+        {categories.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {categories.map((category, index) => {
+              const Icon = categoryIcons[index % categoryIcons.length];
+              return <Link key={category.id} href={`/search?category=${category.id}`} className="panel group p-6 transition hover:-translate-y-1 hover:border-retro-pink/40">
+                <div className="mb-10 grid h-14 w-14 place-items-center rounded-2xl bg-white/5 text-retro-cyan"><Icon size={27}/></div>
+                <h3 className="text-xl font-bold">{category.name}</h3>
+                <p className="mt-3 text-sm leading-7 text-white/45">{category.description || "تصفح المنتجات المتاحة ضمن هذا القسم"}</p>
+                <div className="mt-7 flex items-center justify-between text-xs text-retro-cyan"><span>استكشف القسم</span><ArrowLeft size={16} className="transition group-hover:-translate-x-1"/></div>
+              </Link>;
+            })}
+          </div>
+        ) : (
+          <div className="panel p-8 text-center text-sm text-white/45">ستظهر الأقسام هنا بعد تفعيل قاعدة بيانات المتجر وإضافة الأقسام.</div>
+        )}
       </section>
 
       <section id="featured" className="container pb-20">
