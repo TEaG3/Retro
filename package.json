@@ -12,7 +12,10 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "test": "node --test",
-    "ci": "npm run typecheck && npm run lint && npm run build"
+    "ci": "npm run typecheck && npm run lint && npm run build",
+    "db:remote:list": "wrangler d1 migrations list retro-store-db --remote",
+    "db:remote:apply": "wrangler d1 migrations apply retro-store-db --remote",
+    "db:remote:verify": "wrangler d1 execute retro-store-db --remote --command \"SELECT name, type FROM sqlite_master WHERE name IN ('categories','products','product_images','orders','order_items','admin_users','admin_verification_codes','store_settings','admin_audit_log','order_items_check_stock','order_items_decrease_stock','cancelled_order_restore_stock','one_active_full_admin_idx') ORDER BY type, name;\""
   },
   "dependencies": {
     "@opennextjs/cloudflare": "^1.0.0",
