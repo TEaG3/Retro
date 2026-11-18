@@ -33,6 +33,27 @@ button, input, textarea { font: inherit; }
 :root[data-theme="light"] input,
 :root[data-theme="light"] textarea { color: #19172a; background-color: #fff; border-color: rgba(30,26,65,.2); }
 :root[data-theme="light"] ::selection { background: rgba(255,54,189,.22); }
+
+/* Shared controls used by the responsive Arabic administration console. */
+.admin-input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  margin-top: .45rem;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: .8rem;
+  background: rgba(0,0,0,.22);
+  color: #f7f4ff;
+  padding: .8rem .9rem;
+  outline: none;
+}
+.admin-input:focus { border-color: rgba(0,220,230,.7); box-shadow: 0 0 0 3px rgba(0,220,230,.1); }
+.admin-input::placeholder { color: rgba(255,255,255,.32); }
+:root[data-theme="light"] .admin-input { background: #fff; color: #19172a; border-color: rgba(30,26,65,.2); }
+:root[data-theme="light"] .admin-input::placeholder { color: #89879a; }
+@media (max-width: 640px) {
+  .admin-input { font-size: 16px; }
+}
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
 }
