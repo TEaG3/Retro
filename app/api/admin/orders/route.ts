@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { getDb } from "@/lib/db";
 import { isStoreAdminRequest } from "@/lib/admin";
+import { recordAdminAction } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 const statusSchema = z.object({
@@ -60,5 +61,6 @@ export async function PATCH(request: Request) {
   if (!result.meta.changes) {
     return Response.json({ error: "تغيرت حالة الطلب للتو. حدّث الصفحة وحاول مجدداً." }, { status: 409 });
   }
+  await recordAdminAction(request, "order_status_changed", id, current.status + " -> " + status);
   return Response.json({ ok: true });
 }
