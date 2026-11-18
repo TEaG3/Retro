@@ -94,7 +94,7 @@ npm run deploy
 
 ## Cloudflare Access وإعدادات الإدارة
 
-أنشئ تطبيق Access من نوع Self-hosted لمسارات `/admin/*` و`/api/admin/*)، واجعل سياسة Allow لبريد المالك فقط. أضف متغيرات Worker التالية في إعدادات Cloudflare:
+أنشئ تطبيق Access من نوع Self-hosted لمسارات `/admin/*` و`/api/admin/*`، واجعل سياسة Allow لبريد المالك فقط. أضف متغيرات Worker التالية في إعدادات Cloudflare:
 
 - `CF_ACCESS_TEAM_DOMAIN`
 - `CF_ACCESS_AUD`
